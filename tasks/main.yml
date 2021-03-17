@@ -1,0 +1,11 @@
+---
+
+- name: "Include {{ playbook_dir }} variables"
+  include_vars: "{{ playbook_dir }}/vault.yml"
+  no_log: true
+
+- include: install.yml
+  tags: rabbit_install
+
+- include: delayed_message.yml
+  tags: rabbitmq_delay
