@@ -1,0 +1,42 @@
+---
+- name: Add RabbitMQ APT repository key
+  apt_key: url=https://www.rabbitmq.com/rabbitmq-release-signing-key.asc state=present
+
+- name: Add RabbitMQ APT repository
+  apt_repository:
+    repo: 'deb https://dl.bintray.com/rabbitmq/debian stretch main'
+    state: present
+    filename: 'rabbitmq'
+
+- name: Add RabbitMQ APT repository
+  apt_repository:
+    repo: 'deb https://dl.bintray.com/rabbitmq-erlang/debian buster erlang-22.x'
+    state: present
+    filename: 'rabbitmq'
+  when: ansible_distribution_release == 'buster'
+
+- name: Install RabbitMQ server
+  apt: pkg=rabbitmq-server state=present
+
+- name: "Check if {{ rabbit_user }} already exists"
+  command: rabbitmqctl list_users
+  register: command_result
+
+- name: Install packages
+  apt: pkg={{ item }} state=present
+  loop:
+    - php-amqp
+    - librabbitmq-dev
+  tags:
+    - rabbitpkg
+
+- debug: msg="RabbitMQ user {{ rabbit_user }} doesn't exists. Creating..."
+  when: command_result.stdout.find('{{ rabbit_user }}') == -1
+
+- name: "Add RabbitMQ user: {{ rabbit_user }}"
+  command: rabbitmqctl add_user {{ rabbit_user }} {{ rabbit_pass }}
+  when: " '{{ rabbit_user }}' not in command_result.stdout"
+
+- name: "Set RabbitMQ permissions for {{ rabbit_user }}"
+  command: rabbitmqctl set_permissions {{ rabbit_user }} ".*" ".*" ".*"
+
