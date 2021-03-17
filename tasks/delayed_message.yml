@@ -1,0 +1,32 @@
+---
+
+- name: Install and configure RabbitMQ Delayed Message plugin
+  block:
+
+    - name: Create plugin directory
+      file:
+        path: /usr/lib/rabbitmq/plugins
+        owner: root
+        group: root
+        mode: 0755
+        state: directory
+
+    - name: Get RabbitMQ version
+      shell: dpkg-query --showformat='${Version}' --show rabbitmq-server | awk -F "." '{print$2}'
+      register: rabbit_version
+
+    - name: Download RabbitMQ Delayed Message plugin
+      get_url:
+        src: https://github.com/rabbitmq/rabbitmq-delayed-message-exchange/releases/download/v3.8.0/rabbitmq_delayed_message_exchange-3.8.0.ez
+        dest: /usr/lib/rabbitmq/plugins
+      when: ( rabbit_version | int ) > 6
+
+    - name: Download RabbitMQ Delayed Message plugin
+      unarchive:
+        src: https://dl.bintray.com/rabbitmq/community-plugins/3.6.x/rabbitmq_delayed_message_exchange/rabbitmq_delayed_message_exchange-20171215-3.6.x.zip
+        dest: /usr/lib/rabbitmq/plugins
+        remote_src: yes
+      when: ( rabbit_version | int ) <= 6
+
+    - name: Enable RabbitMQ Delayed Message plugin
+      command: rabbitmq-plugins enable rabbitmq_delayed_message_exchange
